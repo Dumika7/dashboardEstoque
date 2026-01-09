@@ -1,0 +1,839 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard de Estoque e Vendas</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background: #f5f7fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 10px;
+        }
+
+        /* Container principal */
+        #dashboard-estoque {
+            padding: 15px 0;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        /* Cabeçalho do dashboard */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+            padding: 0 10px;
+        }
+
+        .dashboard-header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-weight: 600;
+            font-size: 1.5rem;
+        }
+
+        /* Botão de atualizar */
+        .btn-atualizar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            font-size: 0.95rem;
+        }
+
+        .btn-atualizar:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+
+        .btn-atualizar:active {
+            transform: translateY(0);
+        }
+
+        /* Grid de cards - MELHORADO PARA RESPONSIVIDADE */
+        #categorias-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 0 10px;
+        }
+
+        /* Card de categoria - AJUSTADO PARA NÃO EMPURRAR OUTROS */
+        .categoria-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-left: 4px solid #ccc;
+            position: relative;
+            overflow: visible; /* MUDADO de hidden para visible */
+            min-height: 180px;
+        }
+
+        .categoria-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        .categoria-card.active {
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            z-index: 10;
+        }
+
+        /* Cabeçalho do card */
+        .card-header-custom {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .categoria-icone {
+            width: 45px;
+            height: 45px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: white;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .categoria-nome {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+            word-break: break-word;
+        }
+
+        /* Informações do card */
+        .card-info {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .info-item {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .info-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .info-value.destaque {
+            color: #27ae60;
+        }
+
+        /* MODAL/OVERLAY PARA DETALHES - SOLUÇÃO PARA NÃO EMPURRAR */
+        .detalhes-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .detalhes-overlay.show {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Container dos detalhes */
+        .detalhes-container {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 1000px;
+            width: 100%;
+            margin: 50px auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            position: relative;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { 
+                transform: translateY(-30px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Botão fechar */
+        .btn-fechar-detalhes {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+
+        .btn-fechar-detalhes:hover {
+            background: #c0392b;
+            transform: rotate(90deg);
+        }
+
+        /* Cabeçalho dos detalhes */
+        .detalhes-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #ecf0f1;
+        }
+
+        .detalhes-header .categoria-icone {
+            width: 55px;
+            height: 55px;
+            font-size: 26px;
+            margin-right: 15px;
+        }
+
+        .detalhes-header h3 {
+            font-size: 1.6rem;
+            font-weight: 600;
+            color: #2c3e50;
+            margin: 0;
+        }
+
+        /* Grid de detalhes */
+        .detalhes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .detalhe-item {
+            background: #f8f9fa;
+            padding: 18px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .detalhe-label {
+            font-size: 11px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .detalhe-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        /* Tabela de produtos */
+        .produtos-tabela {
+            width: 100%;
+            margin-top: 15px;
+        }
+
+        .produtos-tabela h4 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            font-size: 1.2rem;
+        }
+
+        .produtos-tabela table {
+            width: 100%;
+            background: white;
+        }
+
+        .produtos-tabela th {
+            background: #34495e;
+            color: white;
+            font-weight: 600;
+            font-size: 12px;
+            text-transform: uppercase;
+            padding: 12px 10px;
+        }
+
+        .produtos-tabela td {
+            padding: 10px;
+            border-bottom: 1px solid #ecf0f1;
+            font-size: 14px;
+        }
+
+        .produtos-tabela tr:hover {
+            background: #f8f9fa;
+        }
+
+        /* Badge */
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 5px;
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid rgba(255,255,255,.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* RESPONSIVIDADE APRIMORADA */
+        @media (max-width: 1200px) {
+            #categorias-grid {
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 5px;
+            }
+
+            #dashboard-estoque {
+                padding: 10px 0;
+            }
+
+            .dashboard-header {
+                flex-direction: column;
+                align-items: stretch;
+                padding: 0 5px;
+            }
+
+            .dashboard-header h2 {
+                font-size: 1.3rem;
+                text-align: center;
+            }
+
+            .btn-atualizar {
+                width: 100%;
+                text-align: center;
+            }
+            
+            #categorias-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                padding: 0 5px;
+            }
+
+            .categoria-card {
+                padding: 15px;
+            }
+
+            .info-value {
+                font-size: 1.2rem;
+            }
+
+            .detalhes-overlay {
+                padding: 10px;
+            }
+
+            .detalhes-container {
+                padding: 20px;
+                margin: 20px auto;
+            }
+
+            .detalhes-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .detalhe-value {
+                font-size: 1.4rem;
+            }
+
+            .produtos-tabela {
+                overflow-x: auto;
+            }
+
+            .produtos-tabela table {
+                min-width: 500px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .dashboard-header h2 {
+                font-size: 1.1rem;
+            }
+
+            .categoria-icone {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .categoria-nome {
+                font-size: 1rem;
+            }
+
+            .info-value {
+                font-size: 1.1rem;
+            }
+
+            .detalhes-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detalhes-header h3 {
+                font-size: 1.3rem;
+            }
+        }
+
+        /* Indicador visual de que o card é clicável */
+        .categoria-card::after {
+            content: '\f078';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            color: #bdc3c7;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .categoria-card:hover::after {
+            color: #7f8c8d;
+            transform: translateY(2px);
+        }
+    </style>
+</head>
+<body>
+    <div id="dashboard-estoque">
+        <!-- Cabeçalho -->
+        <div class="dashboard-header">
+            <h2>
+                <i class="fa fa-chart-line"></i> 
+                Relatorio Saldo Estoque 
+            </h2>
+            <button class="btn btn-atualizar" onclick="atualizarDashboard()">
+                <i class="fa fa-sync-alt"></i> Atualizar Relatório
+            </button>
+        </div>
+        
+        <!-- Grid de Categorias -->
+        <div id="categorias-grid">
+            <!-- Os cards serão inseridos aqui via JavaScript -->
+        </div>
+    </div>
+
+    <!-- OVERLAY PARA DETALHES (fora do grid para não empurrar outros cards) -->
+    <div id="detalhes-overlay" class="detalhes-overlay" onclick="fecharDetalhesSeClicarFora(event)">
+        <div class="detalhes-container" id="detalhes-content">
+            <!-- Conteúdo dos detalhes será inserido aqui -->
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/4.6.2/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // DADOS SIMULADOS (em produção virão do banco via AJAX)
+        const dadosSimulados = {
+            categorias: [
+                {
+                    id: 1,
+                    nome: "Vestidos",
+                    icone: "fa-dress",
+                    cor: "#FF6B6B",
+                    estoque_atual: 150,
+                    valor_vendido_hoje: 2450.00
+                },
+                {
+                    id: 2,
+                    nome: "Calças",
+                    icone: "fa-person",
+                    cor: "#4ECDC4",
+                    estoque_atual: 89,
+                    valor_vendido_hoje: 1890.00
+                },
+                {
+                    id: 3,
+                    nome: "Saias",
+                    icone: "fa-shirt",
+                    cor: "#95E1D3",
+                    estoque_atual: 67,
+                    valor_vendido_hoje: 980.00
+                },
+                {
+                    id: 4,
+                    nome: "Blusas",
+                    icone: "fa-vest",
+                    cor: "#F38181",
+                    estoque_atual: 203,
+                    valor_vendido_hoje: 3120.00
+                },
+                {
+                    id: 5,
+                    nome: "Shorts",
+                    icone: "fa-person-dress",
+                    cor: "#A8E6CF",
+                    estoque_atual: 78,
+                    valor_vendido_hoje: 1120.00
+                },
+                {
+                    id: 6,
+                    nome: "Jaquetas",
+                    icone: "fa-vest-patches",
+                    cor: "#FFB6B9",
+                    estoque_atual: 45,
+                    valor_vendido_hoje: 3680.00
+                }
+            ],
+            detalhes: {
+                1: {
+                    resumo: {
+                        estoque_atual: 150,
+                        entradas_hoje: 20,
+                        vendas_hoje_qtd: 15,
+                        valor_vendido_hoje: 2450.00
+                    },
+                    produtos: [
+                        { nome: "Vestido Floral Manga Curta", estoque: 45, vendido_hoje: 5, valor_vendido: 750.00 },
+                        { nome: "Vestido Longo Festa", estoque: 12, vendido_hoje: 3, valor_vendido: 690.00 },
+                        { nome: "Vestido Midi Casual", estoque: 58, vendido_hoje: 7, valor_vendido: 1010.00 },
+                        { nome: "Vestido Curto Estampado", estoque: 35, vendido_hoje: 0, valor_vendido: 0 }
+                    ]
+                },
+                2: {
+                    resumo: {
+                        estoque_atual: 89,
+                        entradas_hoje: 15,
+                        vendas_hoje_qtd: 12,
+                        valor_vendido_hoje: 1890.00
+                    },
+                    produtos: [
+                        { nome: "Calça Jeans Skinny", estoque: 34, vendido_hoje: 6, valor_vendido: 900.00 },
+                        { nome: "Calça Social Preta", estoque: 28, vendido_hoje: 4, valor_vendido: 640.00 },
+                        { nome: "Calça Legging Sport", estoque: 27, vendido_hoje: 2, valor_vendido: 350.00 }
+                    ]
+                },
+                3: {
+                    resumo: {
+                        estoque_atual: 67,
+                        entradas_hoje: 10,
+                        vendas_hoje_qtd: 8,
+                        valor_vendido_hoje: 980.00
+                    },
+                    produtos: [
+                        { nome: "Saia Midi Plissada", estoque: 23, vendido_hoje: 3, valor_vendido: 390.00 },
+                        { nome: "Saia Curta Jeans", estoque: 31, vendido_hoje: 5, valor_vendido: 590.00 },
+                        { nome: "Saia Longa Estampada", estoque: 13, vendido_hoje: 0, valor_vendido: 0 }
+                    ]
+                },
+                4: {
+                    resumo: {
+                        estoque_atual: 203,
+                        entradas_hoje: 35,
+                        vendas_hoje_qtd: 22,
+                        valor_vendido_hoje: 3120.00
+                    },
+                    produtos: [
+                        { nome: "Blusa Básica Branca", estoque: 78, vendido_hoje: 10, valor_vendido: 800.00 },
+                        { nome: "Blusa Manga Longa Inverno", estoque: 45, vendido_hoje: 6, valor_vendido: 960.00 },
+                        { nome: "Blusa Cropped Verão", estoque: 52, vendido_hoje: 4, valor_vendido: 520.00 },
+                        { nome: "Blusa Social Listrada", estoque: 28, vendido_hoje: 2, valor_vendido: 840.00 }
+                    ]
+                },
+                5: {
+                    resumo: {
+                        estoque_atual: 78,
+                        entradas_hoje: 12,
+                        vendas_hoje_qtd: 9,
+                        valor_vendido_hoje: 1120.00
+                    },
+                    produtos: [
+                        { nome: "Short Jeans Destroyed", estoque: 34, vendido_hoje: 4, valor_vendido: 480.00 },
+                        { nome: "Short Alfaiataria", estoque: 28, vendido_hoje: 3, valor_vendido: 390.00 },
+                        { nome: "Short Fitness", estoque: 16, vendido_hoje: 2, valor_vendido: 250.00 }
+                    ]
+                },
+                6: {
+                    resumo: {
+                        estoque_atual: 45,
+                        entradas_hoje: 8,
+                        vendas_hoje_qtd: 11,
+                        valor_vendido_hoje: 3680.00
+                    },
+                    produtos: [
+                        { nome: "Jaqueta Jeans Oversized", estoque: 18, vendido_hoje: 5, valor_vendido: 1750.00 },
+                        { nome: "Jaqueta Couro Sintético", estoque: 15, vendido_hoje: 4, valor_vendido: 1480.00 },
+                        { nome: "Jaqueta Bomber", estoque: 12, vendido_hoje: 2, valor_vendido: 450.00 }
+                    ]
+                }
+            }
+        };
+
+        // Categoria atualmente aberta (para destacar o card)
+        let categoriaAberta = null;
+
+        // Inicializa o dashboard
+        $(document).ready(function() {
+            renderizarCategorias();
+        });
+
+        // Atualiza o dashboard
+        function atualizarDashboard() {
+            const btn = $('.btn-atualizar');
+            btn.prop('disabled', true);
+            btn.html('<span class="loading-spinner"></span> Atualizando...');
+            
+            // Simula delay de requisição
+            setTimeout(function() {
+                renderizarCategorias();
+                btn.prop('disabled', false);
+                btn.html('<i class="fa fa-sync-alt"></i> Atualizar Relatório');
+                
+                // Animação de sucesso
+                btn.css('background', 'linear-gradient(135deg, #27ae60 0%, #229954 100%)');
+                setTimeout(() => {
+                    btn.css('background', 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)');
+                }, 1000);
+            }, 800);
+        }
+
+        // Renderiza categorias
+        function renderizarCategorias() {
+            const grid = $('#categorias-grid');
+            grid.empty();
+            
+            dadosSimulados.categorias.forEach(function(categoria) {
+                const valorVendido = categoria.valor_vendido_hoje.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                });
+                
+                const card = `
+                    <div class="categoria-card ${categoriaAberta === categoria.id ? 'active' : ''}" 
+                         data-categoria-id="${categoria.id}" 
+                         onclick="abrirDetalhes(${categoria.id})"
+                         style="border-left-color: ${categoria.cor};">
+                        
+                        <div class="card-header-custom">
+                            <div class="categoria-icone" style="background: ${categoria.cor};">
+                                <i class="fa ${categoria.icone}"></i>
+                            </div>
+                            <h3 class="categoria-nome">${categoria.nome}</h3>
+                        </div>
+                        
+                        <div class="card-info">
+                            <div class="info-item">
+                                <div class="info-label">Estoque Atual</div>
+                                <div class="info-value">${categoria.estoque_atual}</div>
+                            </div>
+                            <div class="info-item">
+                                <div class="info-label">Vendido Hoje</div>
+                                <div class="info-value destaque">${valorVendido}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                grid.append(card);
+            });
+        }
+
+        // Abre detalhes em overlay (não empurra outros cards)
+        function abrirDetalhes(categoriaId) {
+            categoriaAberta = categoriaId;
+            
+            // Atualiza destaque visual do card
+            $('.categoria-card').removeClass('active');
+            $(`.categoria-card[data-categoria-id="${categoriaId}"]`).addClass('active');
+            
+            // Busca dados da categoria
+            const categoria = dadosSimulados.categorias.find(c => c.id === categoriaId);
+            
+            // Mostra overlay
+            $('#detalhes-overlay').addClass('show');
+            
+            // Previne scroll do body
+            $('body').css('overflow', 'hidden');
+            
+            // Renderiza detalhes
+            renderizarDetalhes(categoriaId, categoria);
+        }
+
+        // Fecha detalhes
+        function fecharDetalhes() {
+            $('#detalhes-overlay').removeClass('show');
+            $('body').css('overflow', 'auto');
+            $('.categoria-card').removeClass('active');
+            categoriaAberta = null;
+        }
+
+        // Fecha se clicar fora do container
+        function fecharDetalhesSeClicarFora(event) {
+            if (event.target.id === 'detalhes-overlay') {
+                fecharDetalhes();
+            }
+        }
+
+        // Fecha com ESC
+        $(document).keydown(function(e) {
+            if (e.key === "Escape") {
+                fecharDetalhes();
+            }
+        });
+
+        // Renderiza detalhes
+        function renderizarDetalhes(categoriaId, categoria) {
+            const dados = dadosSimulados.detalhes[categoriaId];
+            const content = $('#detalhes-content');
+            
+            if (!dados || !categoria) return;
+            
+            const valorVendido = dados.resumo.valor_vendido_hoje.toLocaleString('pt-BR', {
+                style: 'currency',
+                currency: 'BRL'
+            });
+            
+            let html = `
+                <button class="btn-fechar-detalhes" onclick="fecharDetalhes()">
+                    <i class="fa fa-times"></i>
+                </button>
+                
+                <div class="detalhes-header">
+                    <div class="categoria-icone" style="background: ${categoria.cor};">
+                        <i class="fa ${categoria.icone}"></i>
+                    </div>
+                    <h3>${categoria.nome}</h3>
+                </div>
+                
+                <div class="detalhes-grid">
+                    <div class="detalhe-item">
+                        <div class="detalhe-label">📦 Estoque Atual</div>
+                        <div class="detalhe-value">${dados.resumo.estoque_atual}</div>
+                    </div>
+                    <div class="detalhe-item">
+                        <div class="detalhe-label">📥 Entradas Hoje</div>
+                        <div class="detalhe-value" style="color: #3498db;">${dados.resumo.entradas_hoje}</div>
+                    </div>
+                    <div class="detalhe-item">
+                        <div class="detalhe-label">📤 Vendas Hoje</div>
+                        <div class="detalhe-value" style="color: #e74c3c;">${dados.resumo.vendas_hoje_qtd}</div>
+                    </div>
+                    <div class="detalhe-item">
+                        <div class="detalhe-label">💰 Valor Total</div>
+                        <div class="detalhe-value" style="color: #27ae60;">${valorVendido}</div>
+                    </div>
+                </div>
+                
+                <div class="produtos-tabela">
+                    <h4><i class="fa fa-list"></i> Produtos da Categoria</h4>
+                    <table class="table table-sm table-hover">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th class="text-center">Estoque</th>
+                                <th class="text-center">Vendido Hoje</th>
+                                <th class="text-right">Valor Vendido</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            dados.produtos.forEach(function(produto) {
+                const valorProduto = produto.valor_vendido.toLocaleString('pt-BR', {
+                    style: 'currency',
+                    currency: 'BRL'
+                });
+                
+                let badge = '';
+                if (produto.estoque === 0) {
+                    badge = '<span class="badge-warning">Sem estoque</span>';
+                } else if (produto.estoque < 20) {
+                    badge = '<span class="badge-warning">Estoque baixo</span>';
+                }
+                
+                html += `
+                    <tr>
+                        <td>${produto.nome}${badge}</td>
+                        <td class="text-center"><strong>${produto.estoque}</strong></td>
+                        <td class="text-center">${produto.vendido_hoje}</td>
+                        <td class="text-right">${valorProduto}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            content.html(html);
+        }
+    </script>
+</body>
+</html>
